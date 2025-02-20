@@ -1,70 +1,139 @@
-# Getting Started with Create React App
+# WebRTC Video Chat App
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+## Project Structure
 
-## Available Scripts
+front-end/
+├── src/
+│ ├── Components/
+│ │ ├── Home.js // Main component handling call setup
+│ │ ├── AnswerVideo.js // Video component for answer side
+│ │ ├── CallerVideo.js // Video component for caller side
+│ │ └── ActionButtons/ // Video/Audio control buttons
+│ └── webrtcUtilities/
+│ ├── socketConnection.js // Socket.IO connection handling
+│ ├── prepForCall.js // Media setup
+│ ├── createPeerConn.js // WebRTC peer connection
+│ └── clientSocketListeners.js // Socket event handlers
+back-end/
+├── server.js // Express/Socket.IO server
+└── SSL certificates
 
-In the project directory, you can run:
+## Key Dependencies
 
-### `npm start`
+Frontend (front-end/package.json):
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+json
+{
+"dependencies": {
+"react": "^18.2.0",
+"react-dom": "^18.2.0",
+"react-router-dom": "^6.22.3",
+"socket.io-client": "^4.7.5"
+}
+}
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+Backend (back-end/package.json):
 
-### `npm test`
+json
+{
+"dependencies": {
+"express": "^4.18.2",
+"socket.io": "^4.7.5",
+"cors": "^2.8.5"
+}
+}
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
 
-### `npm run build`
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+## Known Issues
+1. Remote access issues when accessing from different computers on local network
+2. Self-signed certificate warnings in browser
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+## Development Notes
+- HTTPS required for WebRTC functionality
+- Socket.IO connection must be established before WebRTC setup
+- Media access must be granted before creating peer connection
+- Backend server must be running on port 8181
+- Frontend development server runs on port 3000
 
-### `npm run eject`
+## Future Improvements
+1. Proper SSL certificate implementation
+2. Better error handling for failed connections
+3. Screen sharing functionality
+4. Text chat integration
+5. Improved user authentication
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+## Key Components Flow
+1. User clicks "Join" button
+2. Username prompt appears
+3. Socket connection established
+4. User can either:
+   - Start a call (creates offer)
+   - Answer a call (creates answer)
+5. WebRTC peer connection established
+6. Video/Audio streams connected
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+## SSL Requirements
+- Self-signed certificates required for development
+- Located in backend directory as:
+  - localhost+2-key.pem
+  - localhost+2.pem
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+## Configuration Files
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+Environment Variables (front-end/.env):
 
-## Learn More
+REACT_APP_BACKEND_URL=https://localhost:8181
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+## Core Features Implemented
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+1. User Authentication
+   - Basic username-based authentication
+   - Socket.IO auth with password "x"
 
-### Code Splitting
+2. Video Call Setup
+   - getUserMedia access for camera/microphone
+   - WebRTC peer connection establishment
+   - Offer/Answer exchange
+   - ICE candidate handling
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+3. User Interface
+   - Join screen with username prompt
+   - Call initiation button
+   - Available calls list
+   - Video display for both caller and answerer
 
-### Analyzing the Bundle Size
+## Important Implementation Details
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+Socket Connection (socketConnection.js):
+```javascript
+const socket = io(BACKEND_URL, {
+    auth: {
+        userName: userName || 'anonymous',
+        password: "x"
+    },
+    rejectUnauthorized: false,
+    secure: true,
+    reconnection: true,
+    reconnectionAttempts: 3,
+    transports: ['websocket', 'polling'],
+    timeout: 10000
+});
+```
 
-### Making a Progressive Web App
+Server CORS Setup (server.js):
+```javascript
+const io = new Server(expressServer, {
+    cors: {
+        origin: "*",
+        methods: ["GET", "POST"],
+        credentials: true
+    },
+    transports: ['websocket', 'polling'],
+    pingTimeout: 60000,
+    pingInterval: 25000
+});
+```
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
 
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)

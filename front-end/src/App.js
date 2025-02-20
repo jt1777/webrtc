@@ -1,5 +1,5 @@
 import './App.css';
-import { BrowserRouter, Routes, Route, Link } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Link, Navigate } from 'react-router-dom';
 import { useState } from 'react';
 import CallerVideo from './Components/CallerVideo'
 import AnswerVideo from './Components/AnswerVideo'
@@ -62,6 +62,7 @@ function App() {
             offerData={offerData}
           />} 
         />
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>        
   );

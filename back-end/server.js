@@ -1,41 +1,53 @@
-
-const fs = require('fs');
-const https = require('https')
-const http = require('http')
+const { Server } = require('socket.io');
 const express = require('express');
+const https = require('https');
+const fs = require('fs');
+const cors = require('cors');
+
 const app = express();
-const socketio = require('socket.io');
-app.use(express.static(__dirname))
+app.use(cors());
 
-////**MAJOR CHANGE**////
+// SSL setup
+const key = fs.readFileSync('localhost+2-key.pem');
+const cert = fs.readFileSync('localhost+2.pem');
 
-//we need a key and cert to run https
-//we generated them with mkcert
-// $ mkcert create-ca
-// $ mkcert create-cert
-const key = fs.readFileSync('cert.key');
-const cert = fs.readFileSync('cert.crt');
+const expressServer = https.createServer({
+    key,
+    cert,
+    requestCert: false,
+    rejectUnauthorized: false
+}, app);
 
-//we changed our express setup so we can use https
-//pass the key and cert to createServer on https
-const expressServer = https.createServer({key, cert}, app);
-
-// const expressServer = http.createServer(app);
-//create our socket.io server... it will listen to our express port
-const io = socketio(expressServer,{
+const io = new Server(expressServer, {
     cors: {
-        origin: [
-            "https://localhost:3000",
-            "https://localhost:3001",
-            "https://192.168.1.44:3000",
-            // 'https://LOCAL-DEV-IP-HERE' //if using a phone or another computer
-        ],
-        methods: ["GET", "POST"]
-    }
+        origin: "*",
+        methods: ["GET", "POST"],
+        credentials: true
+    },
+    transports: ['websocket', 'polling'],
+    pingTimeout: 60000,
+    pingInterval: 25000
 });
 
+io.use((socket, next) => {
+    const userName = socket.handshake.auth.userName;
+    const password = socket.handshake.auth.password;
+    
+    console.log('Auth attempt:', { userName, password });
+    
+    if (password !== "x") {
+        return next(new Error("Invalid credentials"));
+    }
+    next();
+});
 
-expressServer.listen(8181);
+io.on("connection", (socket) => {
+    console.log('New connection:', socket.id);
+});
+
+expressServer.listen(8181, '0.0.0.0', () => {
+    console.log('Server running on https://0.0.0.0:8181');
+});
 
 //offers will contain {}
 const offers = [
@@ -50,8 +62,8 @@ const connectedSockets = [
     //username, socketId
 ]
 
-io.on('connection',(socket)=>{
-    // console.log("Someone has connected");
+io.on("connection", (socket) => {
+    console.log('New connection:', socket.id);
     const userName = socket.handshake.auth.userName;
     const password = socket.handshake.auth.password;
 
@@ -59,6 +71,12 @@ io.on('connection',(socket)=>{
         socket.disconnect(true);
         return;
     }
+
+    // Test ping
+    socket.on("ping", (callback) => {
+        callback();
+    });
+
     connectedSockets.push({
         socketId: socket.id,
         userName

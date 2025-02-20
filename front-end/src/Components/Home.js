@@ -17,19 +17,17 @@ const Home = ({callStatus,updateCallStatus,setLocalStream,
 
     //called on "Call" or "Answer"
     const initCall = async(typeOfCall)=>{
-        // set localStream and GUM
         await prepForCall(callStatus,updateCallStatus,setLocalStream)
-        // console.log("gum access granted!")
         setTypeOfCall(typeOfCall) //offer or answer
     }
 
     //Test backend connection
-    // useEffect(()=>{
-    //     const test = async()=>{
-    //         const socket = socketConnection("test")
-    //     }
-    //     test()
-    // },[])
+     //useEffect(()=>{
+     //    const test = async()=>{
+     //        const socket = socketConnection("test")
+     //    }
+     //    test()
+     //},[])
     
     //Nothing happens until the user clicks join
     //(Helps with React double render)
@@ -71,9 +69,26 @@ const Home = ({callStatus,updateCallStatus,setLocalStream,
     //once remoteStream AND pc are ready, navigate
     useEffect(()=>{
         if(remoteStream && peerConnection){
-            navigate(`/${typeOfCall}?token=${Math.random()}`)
+            if (!window.location.pathname.includes(typeOfCall)) {
+                navigate(`/${typeOfCall}?token=${Math.random()}`)
+            }
         }
-    },[remoteStream,peerConnection])
+    },[remoteStream, peerConnection])
+
+    // Add cleanup for navigation
+    useEffect(() => {
+        return () => {
+            // Only cleanup when component fully unmounts
+            if (window.location.pathname === '/') {  // Only cleanup on home page exit
+                if(localStream) {
+                    localStream.getTracks().forEach(track => track.stop());
+                }
+                if(peerConnection) {
+                    peerConnection.close();
+                }
+            }
+        };
+    }, []);  // Empty dependency array means this only runs on unmount
 
     
     const call = async()=>{
